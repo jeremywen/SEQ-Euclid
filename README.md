@@ -9,26 +9,9 @@ If you are interested in trying this yourself I would recommend looking at the B
 
 ## Building
 
-This has been built against vcvrack 0.4.0, but I've got a non-standard build environment and won't package this up differently until I can work up the energy to get MinGW going so you will need to integrate this yourself.
-
-In the init function for whatever plugin you integrate this with you will need to include a line like:
-
-createModel<SEQEuclidWidget>(plugin, "SEQE", "SEQ-Euclid");
-
-In Fundimental.cpp for the fundimental plugins, or Core.cpp for the core system etc.
-
-You will also need to add a block like:
-
-struct SEQEuclidWidget : ModuleWidget {
-	SEQEuclidWidget();
-};
-
-Into the plugin header file, eg: Fundimental.hpp / core.hpp / wherever as above and add this header to SEQEuclid.cpp.
-
-You may also wish to adjust the BG_IMAGE_FILE and FONT_FILE macros in SEQEuclid.cpp.
-
-If you're here you're probably building this yourself, starting this up with no settings.json file will result in the probability controls defaulting to 0 and no signals happening. You will want to turn these to the far right.
-
+```
+make dist VERSION=0.5.0
+```
 
 ## Usage 
 The basic idea is that you select a bank to use, enter a pattern fill amount, a pattern length, a probability amount and wire the output to something that needs gates or triggers.
