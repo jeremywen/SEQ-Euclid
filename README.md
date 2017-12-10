@@ -1,3 +1,5 @@
+(My fork has colors fixed for color blind people and people that can't stand the bright red)
+
 # SEQ-Euclid
 
 A 4 channel Euclidian sequencer for [VCV Rack](vcvrack.com) based on the SEQ3 built in sequencer.
