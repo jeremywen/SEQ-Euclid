@@ -1,19 +1,14 @@
+#include "MrLumps.hpp"
 // Todo make smaller lookup table
 // context menu stuff
 #include <string>
 #include <memory>
-
-//Change to suit wherever you place this
-//#include "Fundamental.hpp"
-
 #include "dsp/digital.hpp"
 
 #include "erBitData.h"
 
 #define BG_IMAGE_FILE  assetPlugin(plugin, "res/SEQEuclid.png")
 #define FONT_FILE      assetPlugin(plugin, "res/Segment7Standard.ttf")
-
-
 
 struct SEQEuclid : Module {
   enum ParamIds {
@@ -55,6 +50,10 @@ struct SEQEuclid : Module {
     TRIGGER3_OUTPUT,
     TRIGGER4_OUTPUT,
     NUM_OUTPUTS
+  };
+  enum Lights {
+  	GATE_LIGHT,
+  	NUM_LIGHTS
   };
 
   // LCG see numerical recipies and wikipedia
@@ -115,7 +114,7 @@ struct SEQEuclid : Module {
     // Given the current step, fill, length members and the given probablility
     // Is the note on or off?
     // If on set the gate
-    void SetNote(const float p, const float glength) {
+    void SetNote(float p, float glength) {
       noteOn = false;
 
       if (fill > 0) {
@@ -129,7 +128,7 @@ struct SEQEuclid : Module {
         if (coinFlip == false) {
 
           if (fill < length) {
-            const patternBucket pattern_ref(&(bit_pattern_table[((fill * (SEQUENCE_MAX + 1)) + length)]));
+            patternBucket pattern_ref(&(bit_pattern_table[((fill * (SEQUENCE_MAX + 1)) + length)]));
             if (pattern_ref[currentStep]) {
               gate.trigger(glength);
               noteOn = true;
@@ -152,9 +151,6 @@ struct SEQEuclid : Module {
 
   };
 
-
-
-  
   bool running = true;
   SchmittTrigger clockTrigger;  // for external clock
   SchmittTrigger resetTrigger;  // reset button
@@ -165,24 +161,16 @@ struct SEQEuclid : Module {
   Bank bank4;
     
   double time = 0.0;
-  double dTime = 1.0 / static_cast<double>(gSampleRate);
+  double dTime = 0;
   int bpm = 120;
   double timerLength = 1.0 / (static_cast<double>(bpm) / 60.0);
   double timerTime = timerLength;
 
-  // Lights
-  float gatesLight = 0.0;
-
-  SEQEuclid() {
-      params.resize(NUM_PARAMS);
-      inputs.resize(NUM_INPUTS);
-      outputs.resize(NUM_OUTPUTS);
+	SEQEuclid() : Module(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS) {
   }
-  
-  // Called via menu
-  void initialize() {
+
+  void reset() {
     time = 0.0;
-    dTime = 1.0 / static_cast<double>(gSampleRate);
     bpm = 120;
     timerLength = 1.0 / (static_cast<double>(bpm) / 60.0);
     timerTime = timerLength;
@@ -192,21 +180,18 @@ struct SEQEuclid : Module {
     bank3.Reset();
     bank4.Reset();
   }
-  
-  //Todo
-  void randomize() {
-  }
 
   void step();
 };
 
 
 void SEQEuclid::step() {
-  const float lightLambda = 0.075;
+  float lightLambda = 0.075;
   bool nextStep = false;
 
   // Do clock stuff
   if (running) {
+    dTime = 1.0 / static_cast<double>(engineGetSampleRate());
     time += dTime;
 
     if (inputs[EXT_CLOCK_INPUT].active) { 
@@ -316,23 +301,23 @@ void SEQEuclid::step() {
       
   // Set output high if there's a note currently latched on
   // gate.process(0.0f) to get the current state without advancing time
-  const float gate1 = (bank1.gate.process(0.0f)) ? 10.0f : 0.0f;
-  const float gate2 = (bank2.gate.process(0.0f)) ? 10.0f : 0.0f;
-  const float gate3 = (bank3.gate.process(0.0f)) ? 10.0f : 0.0f;
-  const float gate4 = (bank4.gate.process(0.0f)) ? 10.0f : 0.0f;
+  float gate1 = (bank1.gate.process(0.0f)) ? 10.0f : 0.0f;
+  float gate2 = (bank2.gate.process(0.0f)) ? 10.0f : 0.0f;
+  float gate3 = (bank3.gate.process(0.0f)) ? 10.0f : 0.0f;
+  float gate4 = (bank4.gate.process(0.0f)) ? 10.0f : 0.0f;
     
   // blast out a trigger for new events
-  const float trigger1 = (bank1.noteOn && nextStep) ? 10.0f : 0.0f;
-  const float trigger2 = (bank2.noteOn && nextStep) ? 10.0f : 0.0f;
-  const float trigger3 = (bank3.noteOn && nextStep) ? 10.0f : 0.0f;
-  const float trigger4 = (bank4.noteOn && nextStep) ? 10.0f : 0.0f;
+  float trigger1 = (bank1.noteOn && nextStep) ? 10.0f : 0.0f;
+  float trigger2 = (bank2.noteOn && nextStep) ? 10.0f : 0.0f;
+  float trigger3 = (bank3.noteOn && nextStep) ? 10.0f : 0.0f;
+  float trigger4 = (bank4.noteOn && nextStep) ? 10.0f : 0.0f;
   
   // Setup summed outputs
-  const float gateOr = (gate1 || gate2 || gate3 || gate4) ? 10.0f : 0.0f;
-  const float triggerOr = (trigger1 || trigger2 || trigger3 || trigger4) ? 10.0f : 0.0f;
+  float gateOr = (gate1 || gate2 || gate3 || gate4) ? 10.0f : 0.0f;
+  float triggerOr = (trigger1 || trigger2 || trigger3 || trigger4) ? 10.0f : 0.0f;
   
   // Send outputs out
-  gatesLight = (gateOr >= 1.0f) ? 1.0 : 0.0;
+  lights[GATE_LIGHT].value = (gateOr >= 1.0f) ? 1.0 : 0.0;
 
   outputs[GATE1_OUTPUT].value = gate1;
   outputs[GATE2_OUTPUT].value = gate2;
@@ -360,7 +345,7 @@ struct SEQEuclidDisplay : TransparentWidget {
 
   void draw(NVGcontext *vg) {
     // Background
-    NVGcolor backgroundColor = nvgRGB(0x74, 0x44, 0x44);
+    NVGcolor backgroundColor = nvgRGB(200, 200, 200);
     NVGcolor borderColor = nvgRGB(0x10, 0x10, 0x10);
     nvgBeginPath(vg);
     nvgRoundedRect(vg, 0.0, 0.0, box.size.x, box.size.y, 5.0);
@@ -377,15 +362,15 @@ struct SEQEuclidDisplay : TransparentWidget {
     std::string to_display = std::to_string(*value);
     Vec textPos = Vec(7.0f, 35.0f);
 
-    NVGcolor textColor = nvgRGB(0xdf, 0xd2, 0x2c);
+    NVGcolor textColor = nvgRGB(0, 0, 0);
     nvgFillColor(vg, nvgTransRGBA(textColor, 16));
     nvgText(vg, textPos.x, textPos.y, "~~~", NULL);
 
-    textColor = nvgRGB(0xda, 0xe9, 0x29);
+    textColor = nvgRGB(0, 0, 0);
     nvgFillColor(vg, nvgTransRGBA(textColor, 16));
     nvgText(vg, textPos.x, textPos.y, "\\\\\\", NULL);
 
-    textColor = nvgRGB(0xf0, 0x00, 0x00);
+    textColor = nvgRGB(0, 0, 0);
     nvgFillColor(vg, textColor);
     nvgText(vg, textPos.x, textPos.y, to_display.c_str(), NULL);
   }
@@ -397,8 +382,8 @@ SEQEuclidWidget::SEQEuclidWidget() {
   setModule(module);
   box.size = Vec(17*22, 380);
 
-  const float bankX[10] = { 8, 94, 134, 220, 258, 296, 324, 351 };
-  const float bankY[7] = { 23, 72, 110, 164, 218, 272, 326 };
+  float bankX[10] = { 8, 94, 134, 220, 258, 296, 324, 351 };
+  float bankY[7] = { 23, 72, 110, 164, 218, 272, 326 };
   
   {
     Panel *panel = new LightPanel();
@@ -502,7 +487,7 @@ SEQEuclidWidget::SEQEuclidWidget() {
 
   addOutput(createOutput<PJ301MPort>(Vec(bankX[5], bankY[6] + 8), module, SEQEuclid::GATE_OR_OUTPUT));
   addOutput(createOutput<PJ301MPort>(Vec(bankX[6], bankY[6] + 8), module, SEQEuclid::TRIGGER_OR_OUTPUT));
-  addChild(createValueLight<SmallLight<RedValueLight>>(Vec(bankX[7]+4, bankY[6] + 16), &module->gatesLight));
+  addChild(createLight<SmallLight<MyBlueValueLight>>(Vec(bankX[7]+4, bankY[6] + 16), module, SEQEuclid::GATE_LIGHT));
   
   // Make sure it stays put
 
