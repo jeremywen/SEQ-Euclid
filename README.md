@@ -1,5 +1,8 @@
-* My fork has colors fixed for color blind people and people that can't stand the bright red.
-* My fork also has a `Makefile`
+# My Fork
+
+* Colors fixed for color blind people and people that can't stand the bright red.
+* Has a `Makefile`
+* fixed the sample rate change issue.
 
 # SEQ-Euclid
 
