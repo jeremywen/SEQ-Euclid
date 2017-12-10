@@ -1,6 +1,6 @@
 # My Fork
 
-* Colors fixed for color blind people and people that can't stand the bright red.
+* Colors fixed for color blind people and others bothered by the bright red.
 * Has a `Makefile`
 * fixed the sample rate change issue.
 
