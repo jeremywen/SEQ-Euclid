@@ -1,4 +1,5 @@
-(My fork has colors fixed for color blind people and people that can't stand the bright red)
+* My fork has colors fixed for color blind people and people that can't stand the bright red.
+* My fork also has a `Makefile`
 
 # SEQ-Euclid
 
